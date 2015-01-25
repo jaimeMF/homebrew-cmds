@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Upgrade all HEAD formula by calling `brew reinstall --HEAD $FORMULAE`
+
+die () {
+    echo "$1"
+    exit 1
+}
+
+which jq || die "jq not installed"
+
+FORMULAE=$(brew info --installed --json=v1 | jq -r 'map(select(.installed | map(.version) | contains(["HEAD"]))) | .[].name')
+
+echo "HEAD formulae:" $FORMULAE
+
+exec brew reinstall -v --HEAD $FORMULAE
