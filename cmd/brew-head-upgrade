@@ -9,8 +9,14 @@ die () {
 
 which jq || die "jq not installed"
 
-FORMULAE=$(brew info --installed --json=v1 | jq -r 'map(select(.installed | map(.version) | contains(["HEAD"]))) | .[].name')
+HEADS_INFO=$(brew info --installed --json=v1 | jq -r 'map(select(.installed | map(.version) | contains(["HEAD"])))')
 
-echo "HEAD formulae:" $FORMULAE
+echo "HEAD formulae:" $(echo "$HEADS_INFO" | jq -r '.[].name')
 
-exec brew reinstall -v --HEAD $FORMULAE
+FORMULAE_AND_ARGS=$(echo $HEADS_INFO | jq -r '.[] | .name as $name | (.installed[] | select(.version == "HEAD")) | .used_options | $name + " " + join(" ")')
+
+IFS=$'\n'
+for args in $FORMULAE_AND_ARGS; do
+    set -x
+    eval "brew reinstall -v --HEAD $args"
+done
