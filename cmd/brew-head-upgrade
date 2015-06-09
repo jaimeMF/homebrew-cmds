@@ -1,18 +1,31 @@
 #!/usr/bin/env python3
 from __future__ import unicode_literals, print_function
 
+import argparse
 import json
 import subprocess
 
+help_msg = '''
+Update HEAD formulae.
+If no arguments are given it will update all the currently installed HEAD formulae.
+'''
+parser = argparse.ArgumentParser(description=help_msg)
+parser.add_argument('formulae', metavar='FORMULA', nargs='*', help='Install head version of this formula')
+args = parser.parse_args()
 info_json = subprocess.check_output(
     ['brew', 'info', '--installed', '--json=v1']).decode()
-formulae = json.loads(info_json)
+all_formulae = json.loads(info_json)
 
-head_formulae = (
-    f for f in formulae
-    if any(ins['version'] == 'HEAD' for ins in f['installed']))
+if args.formulae:
+    formulae = (
+        f for f in all_formulae
+        if f['name'] in args.formulae)
+else:
+    formulae = (
+        f for f in all_formulae
+        if any(ins['version'] == 'HEAD' for ins in f['installed']))
 
-for f in head_formulae:
+for f in formulae:
     name = f['name']
     print('Reinstalling', name)
     if f.get('linked_keg'):
