@@ -1,22 +1,24 @@
-#!/bin/sh
+#!/usr/bin/env python3
+from __future__ import unicode_literals, print_function
 
-# Upgrade all HEAD formula by calling `brew reinstall --HEAD $FORMULAE`
+import json
+import subprocess
 
-die () {
-    echo "$1"
-    exit 1
-}
+info_json = subprocess.check_output(
+    ['brew', 'info', '--installed', '--json=v1']).decode()
+formulae = json.loads(info_json)
 
-which jq || die "jq not installed"
+head_formulae = (
+    f for f in formulae
+    if any(ins['version'] == 'HEAD' for ins in f['installed']))
 
-HEADS_INFO=$(brew info --installed --json=v1 | jq -r 'map(select(.installed | map(.version) | contains(["HEAD"])))')
-
-echo "HEAD formulae:" $(echo "$HEADS_INFO" | jq -r '.[].name')
-
-FORMULAE_AND_ARGS=$(echo $HEADS_INFO | jq -r '.[] | .name as $name | (.installed[] | select(.version == "HEAD")) | .used_options | $name + " " + join(" ")')
-
-IFS=$'\n'
-for args in $FORMULAE_AND_ARGS; do
-    set -x
-    eval "brew reinstall -v --HEAD $args"
-done
+for f in head_formulae:
+    name = f['name']
+    print('Reinstalling', name)
+    if f.get('linked_keg'):
+        current_version = next(v for v in f['installed'] if v['version'] == f['linked_keg'])
+    else:
+        current_version = f['installed'][0]
+    opts = current_version.get('used_options') or []
+    args = ['brew', 'reinstall', '--verbose', '--HEAD', name] + opts
+    subprocess.check_call(args)
