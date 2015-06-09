@@ -11,6 +11,7 @@ If no arguments are given it will update all the currently installed HEAD formul
 '''
 parser = argparse.ArgumentParser(description=help_msg)
 parser.add_argument('formulae', metavar='FORMULA', nargs='*', help='Install head version of this formula')
+parser.add_argument('-l', '--list', action='store_true', help='List the formulae that would be reinstalled')
 args = parser.parse_args()
 info_json = subprocess.check_output(
     ['brew', 'info', '--installed', '--json=v1']).decode()
@@ -27,7 +28,9 @@ else:
 
 for f in formulae:
     name = f['name']
-    print('Reinstalling', name)
+    if args.list:
+        print(name)
+        continue
     if f.get('linked_keg'):
         current_version = next(v for v in f['installed'] if v['version'] == f['linked_keg'])
     else:
