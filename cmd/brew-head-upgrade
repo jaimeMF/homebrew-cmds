@@ -36,5 +36,5 @@ for f in formulae:
     else:
         current_version = f['installed'][0]
     opts = current_version.get('used_options') or []
-    args = ['brew', 'reinstall', '--verbose', '--HEAD', name] + opts
-    subprocess.check_call(args)
+    brew_args = ['brew', 'reinstall', '--verbose', '--HEAD', name] + opts
+    subprocess.check_call(brew_args)
